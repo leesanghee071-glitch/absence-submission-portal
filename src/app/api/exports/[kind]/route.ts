@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { db, BUCKET } from "@/lib/supabase";
 import { assertSectionAccess, jsonError, mySectionIds, requireStaff, HttpError } from "@/lib/auth";
-import { EnrollmentView, loadEnrollments, missingSlots, unapprovedSlots, overallStatus } from "@/lib/data";
+import { EnrollmentView, loadEnrollments, missingSlots, unapprovedSlots, overallStatus, weeksLabel } from "@/lib/data";
 import { fmtDate, fmtDateTime, STATUS_LABEL } from "@/lib/format";
 import { safePart } from "@/lib/files";
 import { audit } from "@/lib/audit";
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: { kind: string
             분반: e.section.code,
             학번: e.student.student_no,
             이름: e.student.name,
-            "공가 인정 주차": e.absence_weeks ?? "",
+            "공가 인정 주차": weeksLabel(e.approvedCount),
             "제출 과제 수": e.approvedCount,
             "승인 교수": Array.from(new Set(e.slots.map((s) => s.sub?.reviewer?.name).filter(Boolean))).join(", "),
             "최종 확인일": fmtDate(e.final_confirmed_at),
@@ -50,6 +50,7 @@ export async function GET(req: NextRequest, { params }: { params: { kind: string
             분반: e.section.code,
             학번: e.student.student_no,
             이름: e.student.name,
+            "필요 과제 수(공가 주차)": e.required_count,
           };
           for (let i = 1; i <= 3; i++) {
             const s = e.slots.find((x) => x.slot === i);

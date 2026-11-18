@@ -6,13 +6,13 @@ import { effectiveDeadline, getSettings, isPastDeadline } from "@/lib/settings";
 export async function checkSlotWritable(studentId: string, enrollmentId: string, slot: number) {
   const { data: en } = await db()
     .from("enrollments")
-    .select("id, student_id, deadline_override, final_confirmed_at, section:sections!inner(id, code, assignment_count, course:courses!inner(name))")
+    .select("id, student_id, required_count, deadline_override, final_confirmed_at, section:sections!inner(id, code, course:courses!inner(name))")
     .eq("id", enrollmentId)
     .maybeSingle();
   if (!en || en.student_id !== studentId) throw new HttpError(404, "수강 정보를 찾을 수 없습니다.");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const section = en.section as any;
-  if (!Number.isInteger(slot) || slot < 1 || slot > section.assignment_count) throw new HttpError(400, "없는 과제 번호입니다.");
+  if (!Number.isInteger(slot) || slot < 1 || slot > (en.required_count ?? 3)) throw new HttpError(400, "없는 과제 번호입니다.");
   if (en.final_confirmed_at) throw new HttpError(409, "학과장 최종 확인이 끝나 더 이상 바꿀 수 없습니다.");
   const settings = await getSettings();
   const deadline = effectiveDeadline(settings, en.deadline_override);

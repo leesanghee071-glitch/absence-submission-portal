@@ -13,7 +13,7 @@ export type StudentItem = {
   department: string | null;
   lastLogin: string | null;
   locked: boolean;
-  enrollments: { id: string; label: string; weeks: string | null; deadlineOverride: string | null; status: string; progress: string }[];
+  enrollments: { id: string; label: string; weeks: number; confirmed: boolean; deadlineOverride: string | null; status: string; progress: string }[];
 };
 
 // datetime-local 입력값 ↔ ISO (한국 시간 기준으로 입력받음)
@@ -130,12 +130,21 @@ export default function StudentTable({ items }: { items: StudentItem[] }) {
                       <b className="text-sm font-medium">{e.label}</b>
                       <StatusBadge status={e.status} />
                       <span className="text-ink-soft">{e.progress}</span>
-                      <input
-                        className="input text-xs py-0.5 w-24"
-                        defaultValue={e.weeks ?? ""}
-                        placeholder="공가 주차"
-                        onBlur={(ev) => ev.target.value !== (e.weeks ?? "") && run(() => api("/api/head/students", "PATCH", { enrollmentId: e.id, absenceWeeks: ev.target.value }))}
-                      />
+                      <label className="flex items-center gap-1" title="공가 주차 = 제출할 과제 수">
+                        공가
+                        <select
+                          className="input text-xs py-0.5 w-auto"
+                          value={e.weeks}
+                          disabled={busy || e.confirmed}
+                          onChange={(ev) => run(() => api("/api/head/students", "PATCH", { enrollmentId: e.id, requiredCount: Number(ev.target.value) }))}
+                        >
+                          {[1, 2, 3].map((n) => (
+                            <option key={n} value={n}>
+                              {n}주 (과제 {n}개)
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                       <input
                         type="datetime-local"
                         className="input text-xs py-0.5 w-auto"

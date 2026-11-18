@@ -4,6 +4,8 @@ import { mySectionIds } from "@/lib/auth";
 import { loadEnrollments, summarizeBySection } from "@/lib/data";
 import StaffHeader, { loadStaffForPage } from "@/components/StaffHeader";
 import Notifications from "@/components/Notifications";
+import Announcements from "@/components/Announcements";
+import { loadAnnouncements } from "@/lib/announcements";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,7 @@ export default async function ProfHome() {
       <StaffHeader staff={staff} />
       <main className="max-w-5xl mx-auto px-4 py-6 grid gap-5">
         <h1 className="h1">내 분반</h1>
+        <Announcements items={await loadAnnouncements()} heading="전체 공지 (학과장)" />
         <Notifications items={notes.data ?? []} endpoint="/api/prof/notifications" />
         {summary.length === 0 ? (
           <div className="panel muted">배정된 분반이 없습니다. 학과장에게 분반 배정을 요청해 주세요.</div>

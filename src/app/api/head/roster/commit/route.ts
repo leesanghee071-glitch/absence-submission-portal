@@ -38,8 +38,7 @@ export async function POST(req: NextRequest) {
     for (const r of ok) {
       const key = `${r.course}|${r.section}`;
       if (!sectionCache.has(key)) sectionCache.set(key, await ensureSection(r.course, r.section));
-      const row: Record<string, unknown> = { student_id: idByNo.get(r.studentNo), section_id: sectionCache.get(key) };
-      if (r.absenceWeeks) row.absence_weeks = r.absenceWeeks;
+      const row = { student_id: idByNo.get(r.studentNo), section_id: sectionCache.get(key), required_count: r.requiredCount };
       const { error } = await db().from("enrollments").upsert(row, { onConflict: "student_id,section_id" });
       if (error) throw error;
       enrolled++;

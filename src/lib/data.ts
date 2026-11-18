@@ -23,23 +23,27 @@ export type SlotView = {
 
 export type EnrollmentView = {
   id: string;
-  absence_weeks: string | null;
+  required_count: number; // 이 학생이 이 과목에서 받아야 하는 공가 주차 = 제출할 과제 수 (1~3)
   deadline_override: string | null;
   final_confirmed_at: string | null;
   student: { id: string; student_no: string; name: string; department: string | null; last_login_at: string | null };
-  section: { id: string; code: string; assignment_count: number; assignment_titles: string[] };
+  section: { id: string; code: string; assignment_titles: string[] };
   course: { id: string; name: string };
   professors: { id: string; name: string }[];
   slots: SlotView[];
   submittedCount: number; // 제출된 슬롯 수 (승인·반려 포함)
-  approvedCount: number;
+  approvedCount: number; // 승인된 과제 수 = 공가 인정 주차
   allApproved: boolean;
 };
 
+export function weeksLabel(n: number): string {
+  return `${n}주`;
+}
+
 const SELECT = `
-  id, absence_weeks, deadline_override, final_confirmed_at,
+  id, required_count, deadline_override, final_confirmed_at,
   student:students!inner(id, student_no, name, department, last_login_at),
-  section:sections!inner(id, code, assignment_count, assignment_titles, course_id,
+  section:sections!inner(id, code, assignment_titles, course_id,
     course:courses!inner(id, name),
     section_professors(staff(id, name))),
   submissions(id, slot, status, file_name, original_name, size_bytes, storage_path, reject_reason,
@@ -72,7 +76,7 @@ function toView(r: any): EnrollmentView {
   const section = r.section;
   const subs: SubmissionRow[] = r.submissions ?? [];
   const slots: SlotView[] = [];
-  for (let i = 1; i <= section.assignment_count; i++) {
+  for (let i = 1; i <= (r.required_count ?? 3); i++) {
     const sub = subs.find((s) => s.slot === i) ?? null;
     slots.push({
       slot: i,
@@ -84,11 +88,11 @@ function toView(r: any): EnrollmentView {
   const approvedCount = slots.filter((s) => s.status === "approved").length;
   return {
     id: r.id,
-    absence_weeks: r.absence_weeks,
+    required_count: r.required_count ?? 3,
     deadline_override: r.deadline_override,
     final_confirmed_at: r.final_confirmed_at,
     student: r.student,
-    section: { id: section.id, code: section.code, assignment_count: section.assignment_count, assignment_titles: section.assignment_titles ?? [] },
+    section: { id: section.id, code: section.code, assignment_titles: section.assignment_titles ?? [] },
     course: section.course,
     professors: (section.section_professors ?? []).map((sp: any) => sp.staff).filter(Boolean),
     slots,

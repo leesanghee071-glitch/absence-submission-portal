@@ -188,3 +188,25 @@ revoke all on table
   app_settings, staff, staff_tokens, courses, sections, section_professors, students,
   enrollments, submissions, upload_tickets, notifications, audit_logs
 from anon, authenticated;
+
+-- ───────── v0.2: 학생별 공가 주차(=과제 수) + 공지 ─────────
+-- 공가 인정 주차는 승인된 과제 수로 정해진다. 학생마다(수강별로) 필요한 과제 수 1~3.
+alter table enrollments add column if not exists required_count int not null default 3;
+do $$ begin
+  alter table enrollments add constraint enrollments_required_count_check check (required_count between 1 and 3);
+exception when duplicate_object then null; end $$;
+
+-- 전체 공지(section_id 없음, 학과장) / 과목 공지(section_id, 담당교수·학과장)
+create table if not exists announcements (
+  id uuid primary key default gen_random_uuid(),
+  section_id uuid references sections(id) on delete cascade,
+  title text not null,
+  body text not null default '',
+  author_id uuid references staff(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists announcements_section_idx on announcements (section_id, created_at desc);
+alter table announcements enable row level security;
+grant select, insert, update, delete on table announcements to service_role;
+revoke all on table announcements from anon, authenticated;

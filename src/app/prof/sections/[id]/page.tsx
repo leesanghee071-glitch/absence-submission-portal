@@ -8,6 +8,8 @@ import StaffHeader, { loadStaffForPage } from "@/components/StaffHeader";
 import StatusBadge from "@/components/StatusBadge";
 import ZipButton from "@/components/ZipButton";
 import ReviewControls from "./ReviewControls";
+import Announcements from "@/components/Announcements";
+import { loadAnnouncements } from "@/lib/announcements";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,11 @@ export default async function SectionPage({ params }: { params: { id: string } }
   if (!section) notFound();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const courseName = (section.course as any)?.name as string;
-  const [list, settings] = await Promise.all([loadEnrollments({ sectionIds: [params.id] }), getSettings()]);
+  const [list, settings, notices] = await Promise.all([
+    loadEnrollments({ sectionIds: [params.id] }),
+    getSettings(),
+    loadAnnouncements({ sectionIds: [params.id] }),
+  ]);
   const attention = list.filter((e) => !e.allApproved);
   // 내가 검토할 수 있는지 (학과장은 본인이 배정된 분반만)
   const { data: assigned } = await db().from("section_professors").select("section_id").eq("section_id", params.id).eq("staff_id", staff.id).maybeSingle();
@@ -50,6 +56,15 @@ export default async function SectionPage({ params }: { params: { id: string } }
             <ZipButton query={q} label="분반 ZIP 다운로드" />
           </div>
         </div>
+
+        <Announcements
+          items={notices}
+          heading="과목 공지 (이 분반 학생에게 보임)"
+          sectionId={params.id}
+          canEdit={canReview || staff.role === "head"}
+          sameCourseOption
+          emptyText="아직 공지가 없습니다. 과제 안내나 제출 유의사항을 올리면 이 분반 학생 화면의 과목 카드에 보입니다."
+        />
 
         <section className="panel">
           <h2 className="h2">미제출·미승인 학생 ({attention.length}명)</h2>

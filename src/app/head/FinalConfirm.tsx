@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/components/api";
 import { fmtDate } from "@/lib/format";
 
-type Row = { id: string; course: string; section: string; studentNo: string; name: string; weeks: string | null; confirmedAt: string | null };
+type Row = { id: string; course: string; section: string; studentNo: string; name: string; weeks: number; confirmedAt: string | null };
 
 export default function FinalConfirm({ rows }: { rows: Row[] }) {
   const router = useRouter();
@@ -80,7 +80,7 @@ export default function FinalConfirm({ rows }: { rows: Row[] }) {
                 <td>{r.section}</td>
                 <td>{r.studentNo}</td>
                 <td>{r.name}</td>
-                <td>{r.weeks ?? <span className="text-amber">미입력</span>}</td>
+                <td>{r.weeks}주</td>
               </tr>
             ))}
           </tbody>

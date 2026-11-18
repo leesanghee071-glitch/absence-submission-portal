@@ -24,7 +24,8 @@ export default async function StudentsPage() {
       .map((e) => ({
         id: e.id,
         label: `${e.course.name} ${e.section.code}분반`,
-        weeks: e.absence_weeks,
+        weeks: e.required_count,
+        confirmed: !!e.final_confirmed_at,
         deadlineOverride: e.deadline_override,
         status: overallStatus(e),
         progress: `${e.approvedCount}/${e.slots.length} 승인 · ${e.submittedCount}/${e.slots.length} 제출`,

@@ -11,10 +11,16 @@ export type RosterRow = {
   department: string;
   course: string;
   section: string;
-  absenceWeeks: string;
+  requiredCount: number; // 공가 주차 = 제출할 과제 수 (1~3), 비우면 3
   errors: string[];
   warnings: string[];
 };
+
+// "2", "2주", "2주차" → 2. 1~3이 아니면 null
+export function parseWeeks(v: unknown): number | null {
+  const m = String(v ?? "").trim().match(/^([1-3])\s*(주|주차)?$/);
+  return m ? Number(m[1]) : null;
+}
 
 export const REQUIRED = ["학번", "이름", "생년월일", "학과", "과목", "분반"];
 
@@ -32,10 +38,16 @@ export async function analyzeRoster(input: { text?: string; base64?: string }) {
       department: pick(r, ["학과", "department"]),
       course: pick(r, ["과목", "과목명", "course"]),
       section: normalizeCode(pick(r, ["분반", "section"])),
-      absenceWeeks: pick(r, ["공가주차", "공가인정주차"]),
+      requiredCount: 3,
       errors: [],
       warnings: [],
     };
+    const weeks = pick(r, ["공가주차", "공가인정주차", "과제수"]);
+    if (weeks) {
+      const n = parseWeeks(weeks);
+      if (n === null) row.errors.push("공가주차는 1~3 (예: 2 또는 2주)");
+      else row.requiredCount = n;
+    }
     if (!row.studentNo) row.errors.push("학번 빈 칸");
     else if (!/^[A-Za-z0-9-]{4,20}$/.test(row.studentNo)) row.errors.push("학번 형식 오류");
     if (!row.name) row.errors.push("이름 빈 칸");

@@ -6,12 +6,14 @@ import StaffHeader, { loadStaffForPage } from "@/components/StaffHeader";
 import StatusBadge from "@/components/StatusBadge";
 import ZipButton from "@/components/ZipButton";
 import FinalConfirm from "./FinalConfirm";
+import Announcements from "@/components/Announcements";
+import { loadAnnouncements } from "@/lib/announcements";
 
 export const dynamic = "force-dynamic";
 
 export default async function HeadDashboard() {
   const staff = await loadStaffForPage({ head: true });
-  const [list, settings] = await Promise.all([loadEnrollments(), getSettings()]);
+  const [list, settings, notices] = await Promise.all([loadEnrollments(), getSettings(), loadAnnouncements()]);
   const sections = summarizeBySection(list);
 
   const total = list.length;
@@ -60,6 +62,13 @@ export default async function HeadDashboard() {
             </div>
           ))}
         </div>
+
+        <Announcements
+          items={notices}
+          heading="전체 공지 (모든 학생·교수에게 보임)"
+          canEdit
+          emptyText="아직 공지가 없습니다. 제출 방법, 마감 안내, 문의처 등을 올리면 모든 학생 화면 맨 위에 보입니다."
+        />
 
         <section className="panel">
           <h2 className="h2">보고 자료 다운로드</h2>
@@ -165,7 +174,7 @@ export default async function HeadDashboard() {
               section: e.section.code,
               studentNo: e.student.student_no,
               name: e.student.name,
-              weeks: e.absence_weeks,
+              weeks: e.approvedCount,
               confirmedAt: e.final_confirmed_at,
             }))}
         />

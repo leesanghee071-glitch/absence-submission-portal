@@ -8,6 +8,8 @@ import Header from "@/components/Header";
 import StatusBadge from "@/components/StatusBadge";
 import SlotUploader from "./SlotUploader";
 import Notifications from "@/components/Notifications";
+import Announcements from "@/components/Announcements";
+import { loadAnnouncements } from "@/lib/announcements";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +19,8 @@ export default async function StudentPage() {
   const { data: student } = await db().from("students").select("id, student_no, name").eq("id", s.sub).maybeSingle();
   if (!student) redirect("/login");
 
-  const [list, settings, notes] = await Promise.all([
-    loadEnrollments({ studentId: student.id }),
+  const list = await loadEnrollments({ studentId: student.id });
+  const [settings, notes, globalNotices, courseNotices] = await Promise.all([
     getSettings(),
     db()
       .from("notifications")
@@ -27,6 +29,8 @@ export default async function StudentPage() {
       .eq("recipient_id", student.id)
       .order("created_at", { ascending: false })
       .limit(20),
+    loadAnnouncements(),
+    loadAnnouncements({ sectionIds: list.map((e) => e.section.id) }),
   ]);
 
   return (
@@ -42,6 +46,8 @@ export default async function StudentPage() {
           </p>
         </div>
 
+        <Announcements items={globalNotices} heading="전체 공지 · Notices" />
+
         <Notifications items={notes.data ?? []} />
 
         {list.length === 0 && <div className="panel muted">등록된 과목이 없습니다. 학과 사무실에 문의해 주세요.</div>}
@@ -56,6 +62,9 @@ export default async function StudentPage() {
                   {e.course.name} <span className="text-ink-soft font-normal">{e.section.code}분반</span>
                 </h2>
                 <span className="text-sm text-ink-soft">담당 {e.professors.map((p) => p.name).join(", ") || "미배정"}</span>
+                <span className="badge bg-blueprint-soft text-blueprint">
+                  공가 {e.required_count}주 · 과제 {e.required_count}개 · {e.required_count} week{e.required_count > 1 ? "s" : ""}
+                </span>
                 <span className="ml-auto text-sm">
                   마감 Deadline: <b className={isPastDeadline(deadline) ? "text-correction" : ""}>{deadline ? fmtDateTime(deadline) : "미정"}</b>
                   {e.deadline_override && <span className="badge bg-amber-soft text-amber ml-2">연장됨</span>}
@@ -66,6 +75,11 @@ export default async function StudentPage() {
               ) : e.allApproved ? (
                 <p className="mb-3 text-sm text-ok">모든 과제가 승인되었습니다. 학과장 최종 확인을 기다리고 있습니다. · All approved, awaiting final confirmation.</p>
               ) : null}
+              {courseNotices.some((a) => a.section_id === e.section.id) && (
+                <div className="mb-3">
+                  <Announcements compact items={courseNotices.filter((a) => a.section_id === e.section.id)} heading="과목 공지 · Course notices" />
+                </div>
+              )}
               <div className="grid gap-3">
                 {e.slots.map((slot) => (
                   <div key={slot.slot} className="border border-line rounded p-3 bg-white">

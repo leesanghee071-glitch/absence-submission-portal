@@ -22,7 +22,10 @@ const ACTIONS: Record<string, string> = {
   "student.update": "학생 정보 수정",
   "student.delete": "학생 삭제",
   "student.locked": "학생 로그인 잠김",
-  "enrollment.update": "공가 주차 수정",
+  "enrollment.update": "공가 주차(과제 수) 수정",
+  "announcement.create": "공지 작성",
+  "announcement.update": "공지 수정",
+  "announcement.delete": "공지 삭제",
   "enrollment.delete": "과목에서 학생 제외",
   "submission.create": "과제 제출",
   "submission.replace": "과제 재제출",
@@ -33,7 +36,7 @@ const ACTIONS: Record<string, string> = {
   "final.undo": "최종 확인 취소",
   "deadline.override": "마감 연장",
   "settings.update": "설정 변경",
-  "section.update": "과제 수·제목 변경",
+  "section.update": "과제 제목 변경",
   "files.purge": "원본 파일 삭제",
 };
 

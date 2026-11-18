@@ -12,7 +12,7 @@ type Row = {
   department: string;
   course: string;
   section: string;
-  absenceWeeks: string;
+  requiredCount: number;
   errors: string[];
   warnings: string[];
 };
@@ -22,7 +22,7 @@ export default function RosterUpload() {
   const [payload, setPayload] = useState<{ text?: string; base64?: string } | null>(null);
   const [preview, setPreview] = useState<{ rows: Row[]; missingCols: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ studentNo: "", name: "", birth: "", department: "", course: "", section: "", absenceWeeks: "" });
+  const [form, setForm] = useState({ studentNo: "", name: "", birth: "", department: "", course: "", section: "", requiredCount: "3" });
 
   const bad = preview?.rows.filter((r) => r.errors.length).length ?? 0;
 
@@ -31,7 +31,7 @@ export default function RosterUpload() {
       <div>
         <h2 className="h2">CSV 명단 업로드</h2>
         <p className="text-sm mb-2">
-          필수 열: <code>학번, 이름, 생년월일, 학과, 과목, 분반</code> · 선택 열: <code>공가주차</code>. 한 학생이 여러 과목이면 행을 여러 개 둡니다. 엑셀에서 저장한 CSV(한글 인코딩)와 xlsx도 됩니다.
+          필수 열: <code>학번, 이름, 생년월일, 학과, 과목, 분반</code> · 선택 열: <code>공가주차</code> (1~3, 그 학생이 낼 과제 수. 비우면 3). 한 학생이 여러 과목이면 행을 여러 개 둡니다. 엑셀에서 저장한 CSV(한글 인코딩)와 xlsx도 됩니다.
         </p>
         <input
           type="file"
@@ -87,7 +87,7 @@ export default function RosterUpload() {
                       <td>{r.department}</td>
                       <td>{r.course}</td>
                       <td>{r.section}</td>
-                      <td>{r.absenceWeeks}</td>
+                      <td>{r.requiredCount}주</td>
                       <td className="text-xs">{[...r.errors, ...r.warnings].join(", ") || "정상"}</td>
                     </tr>
                   ))}
@@ -133,7 +133,7 @@ export default function RosterUpload() {
             setBusy(true);
             try {
               await api("/api/head/students", "POST", form);
-              setForm({ ...form, studentNo: "", name: "", birth: "", absenceWeeks: "" });
+              setForm({ ...form, studentNo: "", name: "", birth: "", requiredCount: "3" });
               router.refresh();
             } catch (err) {
               alert(err instanceof Error ? err.message : "추가 실패");
@@ -148,7 +148,13 @@ export default function RosterUpload() {
           <input className="input" placeholder="학과" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required />
           <input className="input" placeholder="과목" value={form.course} onChange={(e) => setForm({ ...form, course: e.target.value })} required />
           <input className="input" placeholder="분반 (예: 01)" value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value })} required />
-          <input className="input" placeholder="공가 인정 주차 (선택)" value={form.absenceWeeks} onChange={(e) => setForm({ ...form, absenceWeeks: e.target.value })} />
+          <select className="input" value={form.requiredCount} onChange={(e) => setForm({ ...form, requiredCount: e.target.value })} title="공가 주차 = 제출할 과제 수">
+            {[1, 2, 3].map((n) => (
+              <option key={n} value={n}>
+                공가 {n}주 (과제 {n}개)
+              </option>
+            ))}
+          </select>
           <button className="btn-primary" disabled={busy}>
             추가
           </button>

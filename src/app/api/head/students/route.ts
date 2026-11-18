@@ -5,6 +5,7 @@ import { birthHash } from "@/lib/crypto";
 import { normalizeBirth } from "@/lib/format";
 import { ensureSection } from "@/lib/sections";
 import { audit } from "@/lib/audit";
+import { parseWeeks } from "@/lib/roster";
 
 // 학생 한 명 추가 (또는 기존 학생에 과목·분반 추가)
 export async function POST(req: NextRequest) {
@@ -28,8 +29,9 @@ export async function POST(req: NextRequest) {
       .single();
     if (error) throw error;
     const sectionId = await ensureSection(course, section);
-    const en: Record<string, unknown> = { student_id: st.id, section_id: sectionId };
-    if (b.absenceWeeks) en.absence_weeks = String(b.absenceWeeks).trim();
+    const n = b.requiredCount === undefined || b.requiredCount === "" ? 3 : parseWeeks(b.requiredCount);
+    if (n === null) throw new HttpError(400, "공가 주차는 1~3입니다.");
+    const en = { student_id: st.id, section_id: sectionId, required_count: n };
     const r = await db().from("enrollments").upsert(en, { onConflict: "student_id,section_id" });
     if (r.error) throw r.error;
     await audit({ type: "staff", id: head.id, label: head.name }, "student.add", studentNo, { course, section });
@@ -39,18 +41,23 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// 학생 정보 수정 (이름·학과·생년월일) 또는 수강별 공가 주차 수정
+// 학생 정보 수정 (이름·학과·생년월일) 또는 수강별 공가 주차(=과제 수) 수정
 export async function PATCH(req: NextRequest) {
   try {
     const head = await requireStaff({ head: true });
     const b = await req.json().catch(() => ({}));
     if (b.enrollmentId) {
-      const { error } = await db()
-        .from("enrollments")
-        .update({ absence_weeks: String(b.absenceWeeks ?? "").trim() || null })
-        .eq("id", String(b.enrollmentId));
+      const n = parseWeeks(b.requiredCount);
+      if (n === null) throw new HttpError(400, "공가 주차는 1~3입니다.");
+      const { data: en } = await db().from("enrollments").select("id, final_confirmed_at").eq("id", String(b.enrollmentId)).maybeSingle();
+      if (!en) throw new HttpError(404, "대상을 찾을 수 없습니다.");
+      if (en.final_confirmed_at) throw new HttpError(409, "최종 확인된 건은 바꿀 수 없습니다. 먼저 최종 확인을 취소해 주세요.");
+      // 줄이려는 번호에 이미 제출된 파일이 있으면 막는다
+      const { data: over } = await db().from("submissions").select("slot").eq("enrollment_id", en.id).gt("slot", n).limit(1);
+      if (over?.length) throw new HttpError(409, `과제 ${n + 1}번 이후에 이미 제출된 파일이 있어 줄일 수 없습니다.`);
+      const { error } = await db().from("enrollments").update({ required_count: n }).eq("id", en.id);
       if (error) throw error;
-      await audit({ type: "staff", id: head.id, label: head.name }, "enrollment.update", String(b.enrollmentId), { absenceWeeks: b.absenceWeeks });
+      await audit({ type: "staff", id: head.id, label: head.name }, "enrollment.update", en.id, { requiredCount: n });
       return NextResponse.json({ ok: true });
     }
     const { data: st } = await db().from("students").select("id, student_no").eq("id", String(b.studentId ?? "")).maybeSingle();
