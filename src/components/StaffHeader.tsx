@@ -7,10 +7,10 @@ import Header from "@/components/Header";
 export async function loadStaffForPage(opts: { head?: boolean } = {}): Promise<StaffRow> {
   const s = await readSession();
   if (!s || s.kind !== "staff") redirect("/staff/login");
-  if (s.role === "head" && !s.mfa) redirect("/staff/mfa");
+  if (s.role === "head" && !s.mfa) redirect("/staff/login");
   const { data } = await db()
     .from("staff")
-    .select("id, name, email, role, status, password_hash, totp_enabled, totp_secret_enc")
+    .select("id, name, email, role, status, password_hash")
     .eq("id", s.sub)
     .maybeSingle();
   if (!data || data.status === "disabled") redirect("/staff/login");
@@ -30,6 +30,7 @@ export default function StaffHeader({ staff }: { staff: StaffRow }) {
           { href: "/head/audit", label: "작업 기록" },
         ]
       : [{ href: "/prof", label: "내 분반" }];
-  nav.push({ href: "/staff/password", label: "비밀번호" });
+  // 학과장은 항상 이메일 링크로 로그인하므로 비밀번호 메뉴가 없다.
+  if (staff.role !== "head") nav.push({ href: "/staff/password", label: "비밀번호" });
   return <Header who={`${staff.name} ${staff.role === "head" ? "학과장" : "교수"}`} nav={nav} logoutTo="/staff/login" />;
 }

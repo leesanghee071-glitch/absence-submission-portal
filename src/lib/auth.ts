@@ -11,8 +11,6 @@ export type StaffRow = {
   role: "professor" | "head";
   status: "invited" | "active" | "disabled";
   password_hash: string | null;
-  totp_enabled: boolean;
-  totp_secret_enc: string | null;
 };
 
 export type StudentRow = { id: string; student_no: string; name: string; department: string | null };
@@ -42,18 +40,18 @@ export async function requireStudent(): Promise<StudentRow> {
   return data as StudentRow;
 }
 
-// 비활성화된 계정이나 2차 인증을 마치지 않은 학과장은 여기서 막는다.
+// 비활성화된 계정이나 이메일 확인을 거치지 않은 학과장 세션은 여기서 막는다.
 export async function requireStaff(opts: { head?: boolean } = {}): Promise<StaffRow> {
   const s = await readSession();
   if (!s || s.kind !== "staff") throw new HttpError(401, "로그인이 필요합니다.");
   const { data } = await db()
     .from("staff")
-    .select("id, name, email, role, status, password_hash, totp_enabled, totp_secret_enc")
+    .select("id, name, email, role, status, password_hash")
     .eq("id", s.sub)
     .maybeSingle();
   const staff = data as StaffRow | null;
   if (!staff || staff.status === "disabled") throw new HttpError(401, "사용할 수 없는 계정입니다.");
-  if (staff.role === "head" && !s.mfa) throw new HttpError(403, "2차 인증이 필요합니다.");
+  if (staff.role === "head" && !s.mfa) throw new HttpError(401, "이메일 확인 링크로 다시 로그인해 주세요.");
   if (opts.head && staff.role !== "head") throw new HttpError(403, "학과장만 사용할 수 있습니다.");
   return staff;
 }
@@ -63,11 +61,11 @@ export async function setStudentSession(res: NextResponse, studentId: string) {
   res.cookies.set(SESSION_COOKIE, token, cookieOptions(STUDENT_SESSION_SECONDS));
 }
 
-export async function setStaffSession(res: NextResponse, staff: { id: string; role: "professor" | "head" }, mfa: boolean) {
+// 학과장 세션은 이메일 링크로 로그인했을 때만 만든다(mfa = 이메일 확인 완료).
+export async function setStaffSession(res: NextResponse, staff: { id: string; role: "professor" | "head" }) {
   const { staff_session_days } = await getSettings();
-  // 학과장은 2차 인증 전 단계 세션을 10분으로 제한
-  const ttl = staff.role === "head" && !mfa ? 600 : Math.max(1, staff_session_days) * 86400;
-  const token = await signSession({ kind: "staff", sub: staff.id, role: staff.role, mfa: staff.role === "head" ? mfa : true }, ttl);
+  const ttl = Math.max(1, staff_session_days) * 86400;
+  const token = await signSession({ kind: "staff", sub: staff.id, role: staff.role, mfa: true }, ttl);
   res.cookies.set(SESSION_COOKIE, token, cookieOptions(ttl));
 }
 

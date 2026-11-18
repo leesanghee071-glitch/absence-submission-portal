@@ -22,8 +22,8 @@ create table if not exists staff (
   role text not null default 'professor' check (role in ('professor', 'head')),
   status text not null default 'invited' check (status in ('invited', 'active', 'disabled')),
   password_hash text,                         -- 선택. 없으면 이메일 링크로만 로그인
-  totp_secret_enc text,                       -- 학과장 2차 인증 비밀값(암호화)
-  totp_enabled boolean not null default false,
+  totp_secret_enc text,                       -- (사용 안 함) 예전 인증 앱 방식의 흔적
+  totp_enabled boolean not null default false, -- (사용 안 함)
   invited_at timestamptz,
   last_login_at timestamptz,
   failed_attempts int not null default 0,

@@ -7,6 +7,7 @@ import { audit } from "@/lib/audit";
 export async function POST(req: NextRequest) {
   try {
     const staff = await requireStaff();
+    if (staff.role === "head") throw new HttpError(400, "학과장은 이메일 확인 링크로 로그인하므로 비밀번호를 쓰지 않습니다.");
     const password = String((await req.json().catch(() => ({}))).password ?? "");
     if (password.length < 10) throw new HttpError(400, "비밀번호는 10자 이상으로 정해 주세요.");
     await db().from("staff").update({ password_hash: await bcrypt.hash(password, 10) }).eq("id", staff.id);

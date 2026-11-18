@@ -12,8 +12,6 @@ const PUBLIC = new Set([
   "/api/auth/staff-token",
   "/api/auth/logout",
 ]);
-// 학과장이 2차 인증을 마치기 전에도 열 수 있는 경로
-const MFA_PATHS = new Set(["/staff/mfa", "/api/auth/mfa"]);
 
 const under = (p: string, prefix: string) => p === prefix || p.startsWith(`${prefix}/`);
 
@@ -37,10 +35,8 @@ export async function middleware(req: NextRequest) {
   }
 
   // 교수·학과장
-  if (s.role === "head" && !s.mfa) {
-    if (MFA_PATHS.has(path)) return NextResponse.next();
-    return deny(req, 403, "2차 인증이 필요합니다.", "/staff/mfa");
-  }
+  // 학과장 세션은 이메일 링크 로그인으로만 생긴다. 그 밖의 세션은 다시 로그인.
+  if (s.role === "head" && !s.mfa) return deny(req, 401, "이메일 확인 링크로 다시 로그인해 주세요.", "/staff/login");
   if (studentArea) return deny(req, 403, "접근 권한이 없습니다.", "/");
   if ((under(path, "/head") || under(path, "/api/head")) && s.role !== "head") {
     return deny(req, 403, "학과장만 사용할 수 있습니다.", "/prof");

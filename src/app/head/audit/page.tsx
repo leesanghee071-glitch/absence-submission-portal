@@ -17,7 +17,6 @@ const ACTIONS: Record<string, string> = {
   "staff.link_login": "로그인 링크 발송",
   "staff.link_reset": "비밀번호 재설정 링크 발송",
   "staff.password_set": "비밀번호 설정",
-  "head.mfa_enrolled": "2차 인증 등록",
   "roster.upload": "학생 명단 CSV 반영",
   "student.add": "학생 추가",
   "student.update": "학생 정보 수정",

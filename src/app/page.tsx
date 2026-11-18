@@ -5,7 +5,7 @@ import { readSession } from "@/lib/auth";
 export default async function Home() {
   const s = await readSession();
   if (s?.kind === "student") redirect("/student");
-  if (s?.kind === "staff") redirect(s.role === "head" ? (s.mfa ? "/head" : "/staff/mfa") : "/prof");
+  if (s?.kind === "staff") redirect(s.role === "head" ? "/head" : "/prof");
 
   return (
     <main className="max-w-md mx-auto px-4 py-16">

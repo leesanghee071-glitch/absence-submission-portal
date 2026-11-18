@@ -1,24 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
-
-function aesKey(): Buffer {
-  const s = process.env.SESSION_SECRET;
-  if (!s) throw new Error("SESSION_SECRET 환경변수가 설정되지 않았습니다.");
-  return createHash("sha256").update(`absence-portal:totp:${s}`).digest();
-}
-
-export function encrypt(plain: string): string {
-  const iv = randomBytes(12);
-  const c = createCipheriv("aes-256-gcm", aesKey(), iv);
-  const enc = Buffer.concat([c.update(plain, "utf8"), c.final()]);
-  return [iv, c.getAuthTag(), enc].map((b) => b.toString("base64")).join(".");
-}
-
-export function decrypt(payload: string): string {
-  const [iv, tag, enc] = payload.split(".").map((p) => Buffer.from(p, "base64"));
-  const d = createDecipheriv("aes-256-gcm", aesKey(), iv);
-  d.setAuthTag(tag);
-  return Buffer.concat([d.update(enc), d.final()]).toString("utf8");
-}
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 
 export function sha256(v: string): string {
   return createHash("sha256").update(v).digest("hex");

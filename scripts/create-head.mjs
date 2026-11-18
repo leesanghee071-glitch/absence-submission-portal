@@ -49,4 +49,4 @@ await db.from("audit_logs").insert({ actor_type: "system", action: "staff.invite
 const base = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
 console.log(`\n학과장 계정: ${name} <${lower}>`);
 console.log(`초대 링크 (7일 유효, 1회용):\n${base}/staff/auth?t=${encodeURIComponent(token)}\n`);
-console.log("링크로 로그인하면 인증 앱(2차 인증) 등록 → 비밀번호 설정 순서로 진행됩니다.");
+console.log("학과장은 이 링크처럼 항상 등록된 메일의 확인 링크로 로그인합니다. 메일 발송(RESEND_API_KEY, EMAIL_FROM) 설정이 필요합니다.");
