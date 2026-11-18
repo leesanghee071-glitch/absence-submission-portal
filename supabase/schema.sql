@@ -174,3 +174,17 @@ values (
 )
 on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
+
+-- ───────── 권한: 서버(service_role)만 읽고 쓴다 ─────────
+-- 최근 Supabase 프로젝트는 SQL editor로 만든 테이블에 service_role 읽기·쓰기 권한을 자동으로 주지 않으므로
+-- 명시적으로 부여하고, 브라우저용 anon/authenticated 역할의 권한은 모두 회수한다.
+grant usage on schema public to service_role;
+grant select, insert, update, delete on table
+  app_settings, staff, staff_tokens, courses, sections, section_professors, students,
+  enrollments, submissions, upload_tickets, notifications, audit_logs
+to service_role;
+grant usage, select on all sequences in schema public to service_role;
+revoke all on table
+  app_settings, staff, staff_tokens, courses, sections, section_professors, students,
+  enrollments, submissions, upload_tickets, notifications, audit_logs
+from anon, authenticated;
