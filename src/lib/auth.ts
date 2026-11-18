@@ -51,7 +51,7 @@ export async function requireStaff(opts: { head?: boolean } = {}): Promise<Staff
     .maybeSingle();
   const staff = data as StaffRow | null;
   if (!staff || staff.status === "disabled") throw new HttpError(401, "사용할 수 없는 계정입니다.");
-  if (staff.role === "head" && !s.mfa) throw new HttpError(401, "이메일 확인 링크로 다시 로그인해 주세요.");
+  if (staff.role === "head" && !s.mfa) throw new HttpError(401, "다시 로그인해 주세요.");
   if (opts.head && staff.role !== "head") throw new HttpError(403, "학과장만 사용할 수 있습니다.");
   return staff;
 }
@@ -61,7 +61,7 @@ export async function setStudentSession(res: NextResponse, studentId: string) {
   res.cookies.set(SESSION_COOKIE, token, cookieOptions(STUDENT_SESSION_SECONDS));
 }
 
-// 학과장 세션은 이메일 링크로 로그인했을 때만 만든다(mfa = 이메일 확인 완료).
+// mfa 값은 예전 2차 인증 단계 세션을 무효로 하기 위해 남겨 둔다(지금은 항상 true).
 export async function setStaffSession(res: NextResponse, staff: { id: string; role: "professor" | "head" }) {
   const { staff_session_days } = await getSettings();
   const ttl = Math.max(1, staff_session_days) * 86400;

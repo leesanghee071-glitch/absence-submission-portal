@@ -26,9 +26,11 @@ export async function POST(req: NextRequest) {
     await db().from("staff").update({ status: "active", last_login_at: now, failed_attempts: 0, locked_until: null }).eq("id", staff.id);
     await audit({ type: "staff", id: staff.id, label: staff.name }, "staff.login", null, { method: `link:${row.purpose}` });
 
-    // 메일 링크를 누른 것 자체가 이메일 확인이다. 학과장은 비밀번호를 쓰지 않으므로 바로 대시보드로.
-    const wantsPassword = staff.role !== "head" && (row.purpose === "reset" || (row.purpose === "invite" && !staff.password_hash));
-    const next = staff.role === "head" ? "/head" : wantsPassword ? `/staff/password?first=${row.purpose === "invite" ? "1" : "0"}` : "/prof";
+    // 학과장은 메일 발송 없이 비밀번호로만 다시 들어오므로, 비밀번호가 없으면 반드시 만들게 한다.
+    const isHead = staff.role === "head";
+    const wantsPassword = row.purpose === "reset" || (row.purpose === "invite" && !staff.password_hash) || (isHead && !staff.password_hash);
+    const home = isHead ? "/head" : "/prof";
+    const next = wantsPassword ? `/staff/password?first=${row.purpose === "invite" ? "1" : "0"}${isHead ? "&required=1" : ""}` : home;
     const res = NextResponse.json({ ok: true, next, purpose: row.purpose, role: staff.role });
     await setStaffSession(res, staff);
     return res;

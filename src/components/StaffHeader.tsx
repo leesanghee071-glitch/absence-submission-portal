@@ -30,7 +30,6 @@ export default function StaffHeader({ staff }: { staff: StaffRow }) {
           { href: "/head/audit", label: "작업 기록" },
         ]
       : [{ href: "/prof", label: "내 분반" }];
-  // 학과장은 항상 이메일 링크로 로그인하므로 비밀번호 메뉴가 없다.
-  if (staff.role !== "head") nav.push({ href: "/staff/password", label: "비밀번호" });
+  nav.push({ href: "/staff/password", label: "비밀번호" });
   return <Header who={`${staff.name} ${staff.role === "head" ? "학과장" : "교수"}`} nav={nav} logoutTo="/staff/login" />;
 }

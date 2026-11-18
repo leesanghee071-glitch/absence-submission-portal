@@ -5,7 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@/components/api";
 
 function PasswordForm() {
-  const first = useSearchParams().get("first") === "1";
+  const params = useSearchParams();
+  const first = params.get("first") === "1";
+  const required = params.get("required") === "1";
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [error, setError] = useState("");
@@ -35,15 +37,17 @@ function PasswordForm() {
   return (
     <form onSubmit={save} className="panel grid gap-3">
       <p className="text-sm">
-        {first
-          ? "환영합니다. 비밀번호를 설정해 두면 다음부터 메일 없이 로그인할 수 있습니다. 설정하지 않아도 매번 이메일 링크로 로그인할 수 있습니다."
-          : "새 비밀번호를 정해 주세요."}
+        {required
+          ? "학과장 계정은 다음부터 이메일과 이 비밀번호로 로그인합니다. 잊어버리면 사이트에서 다시 찾을 수 없으니 안전한 곳에 보관해 주세요."
+          : first
+            ? "환영합니다. 비밀번호를 설정해 두면 다음부터 메일 없이 로그인할 수 있습니다. 설정하지 않아도 매번 이메일 링크로 로그인할 수 있습니다."
+            : "새 비밀번호를 정해 주세요."}
       </p>
       <input className="input" type="password" placeholder="비밀번호 (10자 이상)" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" minLength={10} required />
       <input className="input" type="password" placeholder="비밀번호 확인" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" required />
       {error && <p className="text-sm text-correction">{error}</p>}
       <button className="btn-primary">저장</button>
-      {first && (
+      {first && !required && (
         <a className="btn" href="/">
           건너뛰기 (이메일 링크로만 로그인)
         </a>

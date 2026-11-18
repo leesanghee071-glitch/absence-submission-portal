@@ -44,7 +44,7 @@ export default function StaffLogin() {
   return (
     <main className="max-w-sm mx-auto px-4 py-16">
       <h1 className="h1">교수 · 학과장 로그인</h1>
-      <p className="muted mb-6">비밀번호를 설정하지 않았다면 이메일로 로그인 링크를 받으세요. 학과장은 항상 이메일 확인 링크로 로그인합니다.</p>
+      <p className="muted mb-6">비밀번호를 설정하지 않았다면 이메일로 로그인 링크를 받으세요.</p>
       <form onSubmit={login} className="panel grid gap-4">
         <label className="grid gap-1 text-sm">
           이메일
